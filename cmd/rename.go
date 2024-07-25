@@ -7,7 +7,7 @@ import (
 )
 
 var renameCmd = &cobra.Command{
-	Use:   "rename",
+	Use:   "rename <snapshot-name> <new-snapshot-name>",
 	Short: "rename a snapshot",
 	Long:  `rename a snapshot`,
 	Args:  cobra.ExactArgs(2),

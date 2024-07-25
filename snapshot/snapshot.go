@@ -27,6 +27,10 @@ func (s *SnapshotService) ListSnapshots() ([]entity.Snapshot, error) {
 	return s.snappyRepository.GetAllSnapshots()
 }
 
+func (s *SnapshotService) ListAllDatabases() ([]string, error) {
+	return s.postgresRepository.ListDatabases()
+}
+
 func (s *SnapshotService) CreateSnapshot(sourceDB, snapshotName string) error {
 	if sourceDB == "" {
 		return fmt.Errorf("source database cannot be empty")
@@ -59,8 +63,11 @@ func (s *SnapshotService) CreateSnapshot(sourceDB, snapshotName string) error {
 func (s *SnapshotService) RestoreSnapshot(snapshotName string) error {
 	snapshot, err := s.snappyRepository.GetSnapshotByName(snapshotName)
 	if err != nil {
-		// TODO: check if record not found: change message error, tell snapshot does not exist
-		return fmt.Errorf("failed to get snapshot: %w", err)
+		if err.Error() == "no rows in result set" {
+			return fmt.Errorf("snapshot '%s' does not exist", snapshotName)
+		} else {
+			return fmt.Errorf("failed to get snapshot: %w", err)
+		}
 	}
 
 	err = s.promptToStopConnectionsIfNeeded(snapshot.ReferenceDb)
@@ -83,33 +90,51 @@ func (s *SnapshotService) RestoreSnapshot(snapshotName string) error {
 		return fmt.Errorf("failed to restore snapshot: %w", err)
 	}
 
-	fmt.Printf("Snapshot '%s' restored successfully into database '%s'\n", snapshotName, snapshot.SnapshotDb)
+	fmt.Printf("Snapshot '%s' restored successfully into database '%s'\n", snapshotName, snapshot.ReferenceDb)
 	return nil
 }
 
 func (s *SnapshotService) RemoveSnapshot(snapshotName string) error {
-	err := s.promptToStopConnectionsIfNeeded(snapshotName)
+	snapshot, err := s.snappyRepository.GetSnapshotByName(snapshotName)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return fmt.Errorf("snapshot '%s' does not exist", snapshotName)
+		} else {
+			return fmt.Errorf("failed to get snapshot: %w", err)
+		}
+	}
+
+	err = s.promptToStopConnectionsIfNeeded(snapshot.SnapshotDb)
 	if err != nil {
 		return fmt.Errorf("failed to stop connections: %w", err)
 	}
 
-	err = s.postgresRepository.DropDatabase(snapshotName)
+	err = s.postgresRepository.DropDatabase(snapshot.SnapshotDb)
 	if err != nil {
 		return fmt.Errorf("failed to drop snapshot: %w", err)
 	}
 
-	err = s.snappyRepository.DeleteSnapshot(snapshotName)
+	err = s.snappyRepository.DeleteSnapshot(snapshot.Name)
 	if err != nil {
 		return fmt.Errorf("failed to delete snapshot metadata: %w", err)
 	}
 
-	fmt.Printf("Snapshot '%s' removed successfully\n", snapshotName)
+	fmt.Printf("Snapshot '%s' removed successfully\n", snapshot.Name)
 
 	return nil
 }
 
 func (s *SnapshotService) RenameSnapshot(oldName, newName string) error {
-	err := s.promptToStopConnectionsIfNeeded(oldName)
+	_, err := s.snappyRepository.GetSnapshotByName(oldName)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return fmt.Errorf("snapshot '%s' does not exist", oldName)
+		} else {
+			return fmt.Errorf("failed to get snapshot: %w", err)
+		}
+	}
+
+	err = s.promptToStopConnectionsIfNeeded(oldName)
 	if err != nil {
 		return fmt.Errorf("failed to stop connections: %w", err)
 	}

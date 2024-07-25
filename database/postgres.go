@@ -3,9 +3,12 @@ package database
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"syscall"
 
 	"github.com/brequet/snappy/config"
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/term"
 )
 
 type Postgres struct {
@@ -13,6 +16,14 @@ type Postgres struct {
 }
 
 func NewPostgres(pgConfig config.PostgresConfig) (*Postgres, error) {
+	if isPasswordNeeded(pgConfig) {
+		var err error
+		pgConfig.Password, err = promptForPassword(pgConfig.User)
+		if err != nil {
+			return nil, fmt.Errorf("failed to prompt for password: %w", err)
+		}
+	}
+
 	err := createSnappyDatabase(pgConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize snappy database: %w", err)
@@ -34,8 +45,34 @@ func NewPostgres(pgConfig config.PostgresConfig) (*Postgres, error) {
 	return pg, nil
 }
 
+func isPasswordNeeded(pgConfig config.PostgresConfig) bool {
+	defaultConnString := fmt.Sprintf("user=%s host=%s port=%s dbname=postgres sslmode=disable",
+		pgConfig.User, pgConfig.Host, pgConfig.Port)
+	_, err := pgx.Connect(context.Background(), defaultConnString)
+
+	if err != nil {
+		re := regexp.MustCompile(`server error \(FATAL: role "(.*?)" does not exist \(SQLSTATE 28000\)\)`)
+		if re.MatchString(err.Error()) {
+			return false
+		}
+	}
+
+	return err != nil
+}
+
+func promptForPassword(username string) (string, error) {
+	fmt.Printf("Password for user '%s': ", username)
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytePassword), nil
+}
+
 func createSnappyDatabase(pgConfig config.PostgresConfig) error {
-	defaultConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=postgres sslmode=disable", pgConfig.User, pgConfig.Password, pgConfig.Host, pgConfig.Port)
+	defaultConnString := fmt.Sprintf("user=%s password='%s' host=%s port=%s dbname=postgres sslmode=disable",
+		pgConfig.User, pgConfig.Password, pgConfig.Host, pgConfig.Port)
 	defaultConn, err := pgx.Connect(context.Background(), defaultConnString)
 	if err != nil {
 		return fmt.Errorf("failed to connect to postgres: %w", err)

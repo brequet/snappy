@@ -4,14 +4,20 @@ import (
 	"os"
 )
 
+var Version string
+
 const (
 	PROGRAM_NAME = "snappy"
 )
 
+func IsPgPasswordSet() bool {
+	return os.Getenv("PGPASSWORD") != ""
+}
+
 func GetPgEnvVars() (string, string) {
 	pgUser := os.Getenv("PGUSER")
 	if pgUser == "" {
-		pgUser = "postgres"
+		pgUser = os.Getenv("USERNAME")
 	}
 
 	pgPassword := os.Getenv("PGPASSWORD")

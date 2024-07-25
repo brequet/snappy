@@ -7,7 +7,7 @@ import (
 )
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore",
+	Use:   "restore <snapshot-name>",
 	Short: "restore a snapshot",
 	Long:  `restore a snapshot`,
 	Args:  cobra.ExactArgs(1),
