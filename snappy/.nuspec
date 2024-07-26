@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>snappy</id>
+        <version>0.1.0</version>
+        <title>Snappy</title>
+        <authors>brequet</authors>
+        <owners>brequet</owners>
+        <description>A CLI tool to handle snapshot for postgres databases</description>
+        <releaseNotes>Initial release.</releaseNotes>
+        <tags>golang cli tool postgres database snapshot</tags>
+        <projectUrl>https://github.com/brequet/snappy</projectUrl>
+    </metadata>
+    <files>
+        <file src="tools\**" target="tools" />
+    </files>
+</package>
