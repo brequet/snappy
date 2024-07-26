@@ -3,6 +3,7 @@ package snapshot
 import (
 	"fmt"
 
+	"github.com/brequet/snappy/config"
 	"github.com/brequet/snappy/entity"
 	"github.com/brequet/snappy/repository"
 	"github.com/oklog/ulid/v2"
@@ -32,6 +33,10 @@ func (s *SnapshotService) ListAllDatabases() ([]string, error) {
 }
 
 func (s *SnapshotService) CreateSnapshot(sourceDB, snapshotName string) error {
+	if sourceDB == config.PROGRAM_NAME {
+		return fmt.Errorf("you little rascal, are you trying to break my app?? You cannot create a snapshot from the program itself")
+	}
+
 	if sourceDB == "" {
 		return fmt.Errorf("source database cannot be empty")
 	}

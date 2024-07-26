@@ -41,7 +41,7 @@ func init() {
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	rootCmd.PersistentFlags().BoolP("help", "", false, "Display help")
 
-	rootCmd.PersistentFlags().StringVarP(&userFlag, "username", "U", "", "PostgreSQL user")
+	rootCmd.PersistentFlags().StringVarP(&userFlag, "username", "U", "", "PostgreSQL user (overrides PGUSER environment variable)")
 	rootCmd.PersistentFlags().StringVarP(&hostFlag, "host", "h", "", "PostgreSQL host")
 	rootCmd.PersistentFlags().StringVarP(&portFlag, "port", "p", "", "PostgreSQL port")
 }
@@ -65,13 +65,7 @@ func initialize() {
 		fmt.Println()
 
 		if strings.Contains(err.Error(), "password authentication failed") {
-			if pgConfig.User == "postgres" {
-				fmt.Println("If you do not want to use the default user 'postgres', please set the environment variable 'PGUSER' to the correct user or use the -U flag to specify the user.")
-			}
-			// if !config.IsPgPasswordSet() {
-			// 	fmt.Printf("ariba\n")
-			// }
-			fmt.Println("To use a password, please set the environment variable 'PGPASSWORD' to the correct password.")
+			fmt.Println("You can use the environment variable 'PGPASSWORD' to set the password.")
 		}
 
 		fmt.Println()

@@ -66,6 +66,7 @@ func promptForPassword(username string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	fmt.Println()
 
 	return string(bytePassword), nil
 }
